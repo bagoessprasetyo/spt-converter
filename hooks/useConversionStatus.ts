@@ -229,29 +229,60 @@ export function useConversionStatus(options: UseConversionStatusOptions): UseCon
     if (!autoRefresh) return
 
     const startPolling = () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      // Always clear existing interval first
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
 
       const status = conversion?.status
-      if (!status || status === 'completed' || status === 'failed') return
+      
+      // Stop polling if status is completed or failed
+      if (!status || status === 'completed' || status === 'failed') {
+        console.log(`[POLLING] Stopping polling for ${conversionId}: status is ${status}`)
+        return
+      }
 
       const interval = getPollingInterval(status, retryAttempts)
       if (!interval) return
 
+      console.log(`[POLLING] Starting polling for ${conversionId} with ${interval}ms interval (status: ${status})`)
+      
       intervalRef.current = setInterval(async () => {
-        const data = await fetchStatus()
-        if (data && (data.status === 'completed' || data.status === 'failed')) {
+        if (!mountedRef.current) {
           if (intervalRef.current) clearInterval(intervalRef.current)
+          return
+        }
+
+        const data = await fetchStatus()
+        
+        // Stop polling immediately when conversion is completed or failed
+        if (data && (data.status === 'completed' || data.status === 'failed')) {
+          console.log(`[POLLING] Conversion ${conversionId} finished with status: ${data.status}. Stopping polling.`)
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current)
+            intervalRef.current = null
+          }
         }
       }, interval)
     }
 
     // Initial fetch
-    fetchStatus().then(() => {
-      startPolling()
+    fetchStatus().then((data) => {
+      // Only start polling if conversion is not already completed
+      if (data && data.status !== 'completed' && data.status !== 'failed') {
+        startPolling()
+      } else {
+        console.log(`[POLLING] Conversion ${conversionId} already finished (${data?.status}), skipping polling setup`)
+      }
     })
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      if (intervalRef.current) {
+        console.log(`[POLLING] Cleanup: clearing interval for ${conversionId}`)
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
     }
   }, [conversionId, conversion?.status, retryAttempts, autoRefresh, fetchStatus, getPollingInterval])
 
