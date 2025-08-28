@@ -15,6 +15,7 @@ interface ConversionData {
   id: string
   filename: string
   status: 'pending' | 'processing' | 'completed' | 'failed'
+  documentType?: string
   progress?: number
   downloadUrl?: string
   error?: string

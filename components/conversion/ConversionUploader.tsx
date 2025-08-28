@@ -5,11 +5,13 @@ import { useDropzone } from 'react-dropzone'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Upload, FileText, AlertCircle, X, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Progress } from '@/components/ui/progress'
+import { Label } from '@/components/ui/label'
 import { useAuth, useCredits, useSubscription } from '@/lib/auth/context'
 import { cn } from '@/lib/utils'
+import { DocumentType } from '@/lib/supabase/types'
 
 interface ConversionUploaderProps {
   onUploadStart?: (file: File) => void
@@ -35,6 +37,7 @@ export function ConversionUploader({
 }: ConversionUploaderProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const [documentType, setDocumentType] = useState<DocumentType>('spt')
   
   const { user } = useAuth()
   const { hasCredits, creditsRemaining } = useCredits()
@@ -106,6 +109,7 @@ export function ConversionUploader({
         const formData = new FormData()
         formData.append('file', fileData.file)
         formData.append('userId', user?.id || '')
+        formData.append('documentType', documentType)
 
         // Upload with progress tracking
         const response = await fetch('/api/convert', {
@@ -179,6 +183,69 @@ export function ConversionUploader({
 
   return (
     <div className={cn('space-y-4', className)}>
+      {/* Document Type Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Document Format</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-gray-700">
+              Select the document format for processing:
+            </Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div 
+                className={cn(
+                  "flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-colors",
+                  documentType === 'spt' 
+                    ? "border-blue-500 bg-blue-50" 
+                    : "border-gray-200 hover:border-gray-300"
+                )}
+                onClick={() => setDocumentType('spt')}
+              >
+                <input
+                  type="radio"
+                  id="spt-format"
+                  name="documentType"
+                  value="spt"
+                  checked={documentType === 'spt'}
+                  onChange={() => setDocumentType('spt')}
+                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <div>
+                  <Label htmlFor="spt-format" className="font-medium cursor-pointer">SPT Format</Label>
+                  <p className="text-sm text-gray-600">Standard PDF to Excel conversion</p>
+                </div>
+              </div>
+              
+              <div 
+                className={cn(
+                  "flex items-center space-x-3 p-4 border-2 rounded-lg cursor-pointer transition-colors",
+                  documentType === 'indomaret' 
+                    ? "border-blue-500 bg-blue-50" 
+                    : "border-gray-200 hover:border-gray-300"
+                )}
+                onClick={() => setDocumentType('indomaret')}
+              >
+                <input
+                  type="radio"
+                  id="indomaret-format"
+                  name="documentType"
+                  value="indomaret"
+                  checked={documentType === 'indomaret'}
+                  onChange={() => setDocumentType('indomaret')}
+                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                />
+                <div>
+                  <Label htmlFor="indomaret-format" className="font-medium cursor-pointer">Indomaret Format</Label>
+                  <p className="text-sm text-gray-600">Specialized format for Indomaret documents</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Upload Area */}
       <Card className="border-2 border-dashed transition-colors duration-200">
         <CardContent className="p-6">

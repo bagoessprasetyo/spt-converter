@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createConversion, trackEvent } from '@/lib/supabase/conversions'
 import { getUserProfile, checkUserLimits, updateUserCredits } from '@/lib/supabase/users'
-import { ConversionRequest, ConversionResponse, APIError } from '@/lib/supabase/types'
+import { ConversionRequest, ConversionResponse, APIError, DocumentType } from '@/lib/supabase/types'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = ['application/pdf']
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL
+const N8N_WEBHOOK_INDOMARET_URL = process.env.N8N_WEBHOOK_INDOMARET_URL
 const N8N_WEBHOOK_SECRET = process.env.N8N_WEBHOOK_SECRET
 
 export async function POST(request: NextRequest) {
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
     // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const documentType = (formData.get('documentType') as DocumentType) || 'spt'
     const options = formData.get('options') ? JSON.parse(formData.get('options') as string) : {}
 
     if (!file) {
@@ -45,10 +47,17 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file
+    // Validate file and document type
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
         { code: 'INVALID_FILE_TYPE', message: 'Only PDF files are supported', retryable: false } as APIError,
+        { status: 400 }
+      )
+    }
+
+    if (!['spt', 'indomaret'].includes(documentType)) {
+      return NextResponse.json(
+        { code: 'INVALID_DOCUMENT_TYPE', message: 'Invalid document type. Must be either "spt" or "indomaret"', retryable: false } as APIError,
         { status: 400 }
       )
     }
@@ -94,6 +103,7 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       original_filename: file.name,
       file_size: file.size,
+      document_type: documentType,
       status: 'pending' as const
     }
 
@@ -113,6 +123,7 @@ export async function POST(request: NextRequest) {
       {
         file_name: file.name,
         file_size: file.size,
+        document_type: documentType,
         subscription_tier: userProfile.subscription_tier
       }
     )
@@ -120,26 +131,31 @@ export async function POST(request: NextRequest) {
     // Deduct 1 credit for conversion
     await updateUserCredits(user.id, -1, 'conversion_started')
 
+    // Determine webhook URL based on document type
+    const webhookUrl = documentType === 'indomaret' ? N8N_WEBHOOK_INDOMARET_URL : N8N_WEBHOOK_URL
+
     // Send to n8n webhook for processing
-    if (N8N_WEBHOOK_URL) {
+    if (webhookUrl) {
       try {
-        console.log(`Sending file to n8n webhook: ${file.name} (${file.size} bytes)`)
+        console.log(`Sending file to ${documentType} webhook: ${file.name} (${file.size} bytes)`)
         
         const webhookPayload = {
           conversionId: conversion.id,
           userId: user.id,
           fileName: file.name,
           fileSize: file.size,
+          documentType: documentType,
           fileData: fileBuffer.toString('base64'),
           callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/n8n`,
           secret: N8N_WEBHOOK_SECRET
         }
 
         // Debug the webhook secret
-        console.log('Webhook URL:', N8N_WEBHOOK_URL)
+        console.log('Webhook URL:', webhookUrl)
+        console.log('Document Type:', documentType)
         console.log('Auth header will be:', N8N_WEBHOOK_SECRET ? '[REDACTED]' : 'NOT_SET')
         
-        const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
+        const webhookResponse = await fetch(webhookUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -198,7 +214,8 @@ export async function POST(request: NextRequest) {
             message: 'Failed to start conversion. Please try again.',
             retryable: true,
             debug: process.env.NODE_ENV === 'development' ? {
-              webhookUrl: N8N_WEBHOOK_URL,
+              webhookUrl: webhookUrl,
+              documentType: documentType,
               error: webhookError instanceof Error ? webhookError.message : 'Unknown error'
             } : undefined
           } as APIError,
@@ -206,7 +223,7 @@ export async function POST(request: NextRequest) {
         )
       }
     } else {
-      console.log('N8N_WEBHOOK_URL not configured, using fallback processing...')
+      console.log(`N8N webhook URL for ${documentType} not configured, using fallback processing...`)
       
       // Fallback: simulate processing for development
       await supabase

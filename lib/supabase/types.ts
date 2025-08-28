@@ -50,6 +50,7 @@ export interface Database {
           converted_filename: string | null
           file_size: number | null
           status: string
+          document_type: string
           error_message: string | null
           tables_extracted: number
           total_rows: number
@@ -67,6 +68,7 @@ export interface Database {
           converted_filename?: string | null
           file_size?: number | null
           status?: string
+          document_type?: string
           error_message?: string | null
           tables_extracted?: number
           total_rows?: number
@@ -84,6 +86,7 @@ export interface Database {
           converted_filename?: string | null
           file_size?: number | null
           status?: string
+          document_type?: string
           error_message?: string | null
           tables_extracted?: number
           total_rows?: number
@@ -188,6 +191,8 @@ export interface Database {
 // Application Types
 export type ConversionStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
+export type DocumentType = 'spt' | 'indomaret'
+
 export type SubscriptionTier = 'free' | 'pro' | 'business'
 
 export type EventType = 'upload' | 'conversion_start' | 'conversion_success' | 'conversion_failed' | 'download'
@@ -197,6 +202,7 @@ export interface ConversionRequest {
   fileName: string
   mimeType: string
   fileSize: number
+  documentType: DocumentType
   userId?: string
   conversionId?: string
 }
