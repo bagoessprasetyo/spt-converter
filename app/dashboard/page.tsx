@@ -23,7 +23,10 @@ import {
   X,
   AlertTriangle,
   Table as TableIcon,
-  FileOutput
+  FileOutput,
+  FileSpreadsheet,
+  Hash,
+  User
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -385,27 +388,66 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <FileText className="h-5 w-5 text-white" />
+      {/* Enhanced Navigation */}
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-lg border-b border-gray-200/50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center space-x-4">
+              <motion.div 
+                initial={{ rotate: -10 }}
+                animate={{ rotate: 0 }}
+                className="w-12 h-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg"
+              >
+                <FileText className="h-7 w-7 text-white" />
+              </motion.div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 leading-tight">PDF to Excel</h1>
+                <p className="text-sm text-gray-500 leading-tight">Professional Converter</p>
               </div>
-              <span className="text-xl font-bold text-gray-900">PDF to Excel</span>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost">Home</Button>
-              </Link>
-              <Link href="/convert">
-                <Button>Convert Files</Button>
-              </Link>
-              <Link href="/settings">
-                <Button variant="outline">Settings</Button>
-              </Link>
+            <div className="flex items-center space-x-8">
+              {/* Navigation Links */}
+              <div className="hidden md:flex items-center space-x-2">
+                <Link href="/">
+                  <Button variant="ghost" className="text-gray-600 hover:text-gray-900 px-4 py-2">Home</Button>
+                </Link>
+                <Link href="/convert">
+                  <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 px-6 py-2">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Convert
+                  </Button>
+                </Link>
+              </div>
+              
+              {/* User Profile Section */}
+              <div className="flex items-center space-x-4">
+                <div className="hidden sm:block text-right">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {profile?.full_name || user?.email?.split('@')[0] || 'User'}
+                  </p>
+                  <div className="flex items-center justify-end space-x-2 mt-1">
+                    <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                      {profile?.credits_remaining || 0} credits
+                    </Badge>
+                    <span className="text-xs text-gray-500 font-medium">
+                      {usageStats?.subscriptionTier || 'Free'}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                  <span className="text-sm font-bold text-blue-700">
+                    {(profile?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                
+                <Link href="/settings">
+                  <Button variant="ghost" className="text-gray-600 hover:text-gray-900 px-4 py-2">
+                    Settings
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -437,67 +479,175 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
+        {/* Enhanced Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
         >
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Conversions</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalConversions || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.successfulConversions || 0} successful
-              </p>
-            </CardContent>
-          </Card>
+          {/* Total Conversions Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+          >
+            <Card className="relative overflow-hidden border-l-4 border-l-blue-500 hover:shadow-lg transition-all duration-200 group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-blue-100 rounded-xl group-hover:bg-blue-200 transition-colors">
+                      <BarChart3 className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <motion.p 
+                        key={stats?.totalConversions}
+                        initial={{ scale: 1.2, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="text-3xl font-bold text-gray-900"
+                      >
+                        {stats?.totalConversions || 0}
+                      </motion.p>
+                      <p className="text-sm font-medium text-gray-600 -mt-1">Total Conversions</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <CheckCircle className="h-3 w-3 text-green-600" />
+                        <span className="text-xs text-green-600 font-medium">
+                          {stats?.successfulConversions || 0} successful
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-blue-200">
+                    <TrendingUp className="h-8 w-8" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Credits Remaining</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{profile?.credits_remaining || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {usageStats?.creditsUsed || 0} used this month
-              </p>
-            </CardContent>
-          </Card>
+          {/* Credits Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Card className="relative overflow-hidden border-l-4 border-l-emerald-500 hover:shadow-lg transition-all duration-200 group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-emerald-100 rounded-xl group-hover:bg-emerald-200 transition-colors">
+                      <TrendingUp className="h-6 w-6 text-emerald-600" />
+                    </div>
+                    <div>
+                      <motion.p 
+                        key={profile?.credits_remaining}
+                        initial={{ scale: 1.2, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="text-3xl font-bold text-gray-900"
+                      >
+                        {profile?.credits_remaining || 0}
+                      </motion.p>
+                      <p className="text-sm font-medium text-gray-600 -mt-1">Credits Remaining</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                        <span className="text-xs text-orange-600 font-medium">
+                          {usageStats?.creditsUsed || 0} used this month
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-emerald-200">
+                    <Calendar className="h-8 w-8" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats?.totalConversions ? 
-                  Math.round((stats.successfulConversions / stats.totalConversions) * 100) : 0}%
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.failedConversions || 0} failed
-              </p>
-            </CardContent>
-          </Card>
+          {/* Success Rate Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="relative overflow-hidden border-l-4 border-l-green-500 hover:shadow-lg transition-all duration-200 group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-green-100 rounded-xl group-hover:bg-green-200 transition-colors">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <motion.p 
+                        key={stats?.totalConversions}
+                        initial={{ scale: 1.2, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="text-3xl font-bold text-gray-900"
+                      >
+                        {stats?.totalConversions ? 
+                          Math.round((stats.successfulConversions / stats.totalConversions) * 100) : 0}%
+                      </motion.p>
+                      <p className="text-sm font-medium text-gray-600 -mt-1">Success Rate</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        {stats?.failedConversions ? (
+                          <XCircle className="h-3 w-3 text-red-500" />
+                        ) : (
+                          <CheckCircle className="h-3 w-3 text-green-500" />
+                        )}
+                        <span className={`text-xs font-medium ${
+                          stats?.failedConversions ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {stats?.failedConversions || 0} failed
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-green-200">
+                    <BarChart3 className="h-8 w-8" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
           
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Month</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{usageStats?.conversionsThisMonth || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                conversions completed
-              </p>
-            </CardContent>
-          </Card>
+          {/* Monthly Activity Card */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="relative overflow-hidden border-l-4 border-l-purple-500 hover:shadow-lg transition-all duration-200 group">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
+                      <Calendar className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div>
+                      <motion.p 
+                        key={usageStats?.conversionsThisMonth}
+                        initial={{ scale: 1.2, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="text-3xl font-bold text-gray-900"
+                      >
+                        {usageStats?.conversionsThisMonth || 0}
+                      </motion.p>
+                      <p className="text-sm font-medium text-gray-600 -mt-1">This Month</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                        <span className="text-xs text-purple-600 font-medium">
+                          Active period
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-purple-200">
+                    <FileSpreadsheet className="h-8 w-8" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
 
         {/* Conversions Table */}
@@ -767,49 +917,81 @@ export default function DashboardPage() {
         </motion.div>
         
         
-        {/* Delete Confirmation Modal */}
+        {/* Enhanced Delete Confirmation Modal */}
         <Dialog open={!!deleteConfirmModal} onOpenChange={() => setDeleteConfirmModal(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-                <span>Delete Conversion</span>
-              </DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this conversion? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            
-            {deleteConfirmModal && (
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="font-medium">{deleteConfirmModal.original_filename}</p>
-                  <p className="text-sm text-gray-600">Created {formatDate(deleteConfirmModal.created_at)}</p>
+          <DialogContent className="sm:max-w-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-6"
+            >
+              <DialogHeader className="text-center">
+                <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
-                
-                <DialogFooter>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setDeleteConfirmModal(null)}
-                    disabled={isDeleting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    variant="destructive" 
-                    onClick={() => handleDelete(deleteConfirmModal)}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="mr-2 h-4 w-4" />
-                    )}
-                    Delete
-                  </Button>
-                </DialogFooter>
-              </div>
-            )}
+                <DialogTitle className="text-lg font-semibold text-gray-900">
+                  Delete Conversion?
+                </DialogTitle>
+                <DialogDescription className="text-gray-600">
+                  This action cannot be undone. The conversion and all associated data will be permanently removed.
+                </DialogDescription>
+              </DialogHeader>
+              
+              {deleteConfirmModal && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="h-5 w-5 text-red-600 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-gray-900 truncate">
+                          {deleteConfirmModal.original_filename}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Created {formatDate(deleteConfirmModal.created_at)}
+                        </p>
+                        <div className="flex items-center space-x-3 mt-2">
+                          {getStatusBadge(deleteConfirmModal.status)}
+                          {deleteConfirmModal.file_size && (
+                            <span className="text-xs text-gray-500">
+                              {formatFileSize(deleteConfirmModal.file_size)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <DialogFooter className="flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setDeleteConfirmModal(null)}
+                      disabled={isDeleting}
+                      className="w-full sm:w-auto border-gray-300 hover:border-gray-400"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      onClick={() => handleDelete(deleteConfirmModal)}
+                      disabled={isDeleting}
+                      className="w-full sm:w-auto bg-red-600 hover:bg-red-700"
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Permanently
+                        </>
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </div>
+              )}
+            </motion.div>
           </DialogContent>
         </Dialog>
       </div>
