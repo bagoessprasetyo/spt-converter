@@ -57,6 +57,8 @@ export interface Database {
           processing_time_ms: number | null
           google_sheet_url: string | null
           download_url: string | null
+          summaries: Json | null
+          transaction_data: Json | null
           expires_at: string | null
           created_at: string
           updated_at: string
@@ -75,6 +77,8 @@ export interface Database {
           processing_time_ms?: number | null
           google_sheet_url?: string | null
           download_url?: string | null
+          summaries?: Json | null
+          transaction_data?: Json | null
           expires_at?: string | null
           created_at?: string
           updated_at?: string
@@ -93,6 +97,8 @@ export interface Database {
           processing_time_ms?: number | null
           google_sheet_url?: string | null
           download_url?: string | null
+          summaries?: Json | null
+          transaction_data?: Json | null
           expires_at?: string | null
           created_at?: string
           updated_at?: string
@@ -246,4 +252,29 @@ export interface SubscriptionPlan {
     apiAccess: boolean
     customRetention: number // days
   }
+}
+
+// Conversion Detail Types
+export interface CompanySummary {
+  json: {
+    nama: string
+    totalPajak: number
+    perJenis: Record<string, number>
+  }
+}
+
+export interface TransactionData {
+  no: number
+  nama: string
+  npwp: string
+  jenis_penghasilan: string
+  rupiah: number
+  pajak_penghasilan: number
+  nomor: string
+  tanggal: string
+}
+
+export interface ConversionDetails {
+  summaries: CompanySummary[]
+  transaction_data: TransactionData[]
 }

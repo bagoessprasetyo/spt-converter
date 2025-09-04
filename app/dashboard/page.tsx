@@ -46,8 +46,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useAuth } from '@/lib/auth/context'
 import { getUserConversions, getConversionStats, deleteConversion, retryConversion } from '@/lib/supabase/conversions-client'
 import { getUserUsageStats } from '@/lib/supabase/users-client'
-import { redirect } from 'next/navigation'
+import { redirect, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { CompanySummary, TransactionData } from '@/lib/supabase/types'
 
 interface Conversion {
   id: string
@@ -63,6 +64,8 @@ interface Conversion {
   tables_extracted: number
   total_rows: number
   processing_time_ms?: number | null
+  summaries?: CompanySummary[] | null
+  transaction_data?: TransactionData[] | null
 }
 
 interface Stats {
@@ -90,6 +93,7 @@ type SortOrder = 'asc' | 'desc'
 
 export default function DashboardPage() {
   const { user, profile, loading } = useAuth()
+  const router = useRouter()
   const [conversions, setConversions] = useState<Conversion[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null)
@@ -99,7 +103,6 @@ export default function DashboardPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [isLoading, setIsLoading] = useState(true)
   const [selectedConversions, setSelectedConversions] = useState<Set<string>>(new Set())
-  const [viewDetailsModal, setViewDetailsModal] = useState<Conversion | null>(null)
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<Conversion | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDownloading, setIsDownloading] = useState<Set<string>>(new Set())
@@ -120,7 +123,14 @@ export default function DashboardPage() {
         getUserUsageStats(user!.id)
       ])
       
-      setConversions(conversionsData)
+      // Type cast the Json fields to proper types
+      const typedConversions = conversionsData.map(conv => ({
+        ...conv,
+        summaries: conv.summaries as CompanySummary[] | null,
+        transaction_data: conv.transaction_data as TransactionData[] | null
+      }))
+      
+      setConversions(typedConversions)
       setStats(statsData)
       setUsageStats(usageData)
     } catch (error) {
@@ -663,7 +673,7 @@ export default function DashboardPage() {
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 
-                                <DropdownMenuItem onClick={() => setViewDetailsModal(conversion)}>
+                                <DropdownMenuItem onClick={() => router.push(`/dashboard/conversion/${conversion.id}`)}>
                                   <Eye className="mr-2 h-4 w-4" />
                                   View Details
                                 </DropdownMenuItem>
@@ -756,119 +766,6 @@ export default function DashboardPage() {
           </Card>
         </motion.div>
         
-        {/* View Details Modal */}
-        <Dialog open={!!viewDetailsModal} onOpenChange={() => setViewDetailsModal(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
-                <span>Conversion Details</span>
-              </DialogTitle>
-              <DialogDescription>
-                Detailed information about your PDF conversion
-              </DialogDescription>
-            </DialogHeader>
-            
-            {viewDetailsModal && (
-              <div className="space-y-6">
-                {/* File Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">File Information</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Original File</label>
-                      <p className="text-sm font-mono">{viewDetailsModal.original_filename}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">File Size</label>
-                      <p className="text-sm">{viewDetailsModal.file_size ? formatFileSize(viewDetailsModal.file_size) : 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Status</label>
-                      <div className="flex items-center space-x-2">
-                        {getStatusIcon(viewDetailsModal.status)}
-                        {getStatusBadge(viewDetailsModal.status)}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Conversion ID</label>
-                      <p className="text-sm font-mono">{viewDetailsModal.id}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Processing Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3">Processing Information</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Tables Extracted</label>
-                      <p className="text-sm">{viewDetailsModal.tables_extracted || 0}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Total Rows</label>
-                      <p className="text-sm">{viewDetailsModal.total_rows || 0}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Processing Time</label>
-                      <p className="text-sm">
-                        {viewDetailsModal.processing_time_ms 
-                          ? `${Math.round(viewDetailsModal.processing_time_ms / 1000)}s`
-                          : 'N/A'
-                        }
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Created</label>
-                      <p className="text-sm">{formatDate(viewDetailsModal.created_at)}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Error Information */}
-                {viewDetailsModal.error_message && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Error Information</h3>
-                    <Alert variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        {viewDetailsModal.error_message}
-                      </AlertDescription>
-                    </Alert>
-                  </div>
-                )}
-                
-                {/* Actions */}
-                <div className="flex justify-end space-x-2">
-                  {viewDetailsModal.status === 'completed' && (
-                    <Button 
-                      onClick={() => handleDownload(viewDetailsModal)}
-                      disabled={isDownloading.has(viewDetailsModal.id)}
-                    >
-                      {isDownloading.has(viewDetailsModal.id) ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Download className="mr-2 h-4 w-4" />
-                      )}
-                      Download
-                    </Button>
-                  )}
-                  
-                  {viewDetailsModal.status === 'failed' && (
-                    <Button onClick={() => handleRetry(viewDetailsModal)} variant="outline">
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Retry
-                    </Button>
-                  )}
-                  
-                  <Button variant="outline" onClick={() => setViewDetailsModal(null)}>
-                    Close
-                  </Button>
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
         
         {/* Delete Confirmation Modal */}
         <Dialog open={!!deleteConfirmModal} onOpenChange={() => setDeleteConfirmModal(null)}>

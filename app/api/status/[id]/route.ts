@@ -143,7 +143,10 @@ export async function GET(
       canRetry: conversion.status === 'failed' && !conversion.error_message?.includes('invalid file'),
       // File metadata
       originalFilename: conversion.original_filename,
-      convertedFilename: conversion.converted_filename
+      convertedFilename: conversion.converted_filename,
+      // New detailed data fields
+      summaries: conversion.summaries,
+      transactionData: conversion.transaction_data
     }
 
     return NextResponse.json(response, { status: 200 })

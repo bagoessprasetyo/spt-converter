@@ -1,6 +1,6 @@
 import { createClient } from './server'
 import { Database } from './types'
-import { ConversionStatus, ConversionRequest, EventType } from './types'
+import { ConversionStatus, ConversionRequest, EventType, CompanySummary, TransactionData } from './types'
 
 type Conversion = Database['public']['Tables']['conversions']['Row']
 type ConversionInsert = Database['public']['Tables']['conversions']['Insert']
@@ -147,4 +147,27 @@ export async function getUserAnalytics(userId: string, days = 30) {
   
   if (error) throw error
   return analytics
+}
+
+// Helper function to update conversion with summary and transaction data
+export async function updateConversionDetails(
+  id: string,
+  summaries: CompanySummary[],
+  transactionData: TransactionData[]
+) {
+  const supabase = createClient()
+  
+  const { data: conversion, error } = await supabase
+    .from('conversions')
+    .update({
+      summaries: summaries as any,
+      transaction_data: transactionData as any,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', id)
+    .select()
+    .single()
+  
+  if (error) throw error
+  return conversion
 }

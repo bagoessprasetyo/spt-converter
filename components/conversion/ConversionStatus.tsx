@@ -14,20 +14,23 @@ import {
   Search,
   Table,
   FileOutput,
-  Zap
+  Zap,
+  Eye,
+  Building2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import type { ConversionStatus as Status } from '@/lib/supabase/types'
+import type { ConversionStatus as Status, CompanySummary, TransactionData } from '@/lib/supabase/types'
 import { cn } from '@/lib/utils'
 
 interface ConversionStatusProps {
   conversionId: string
   onStatusChange?: (status: Status) => void
   onDownload?: (conversionId: string) => void
+  onViewDetails?: (conversionId: string, summaries: CompanySummary[], transactionData: TransactionData[]) => void
   className?: string
   showDetails?: boolean
   autoRefresh?: boolean
@@ -57,6 +60,8 @@ interface ConversionData {
   totalRows?: number
   currentStage?: string
   retryCount?: number
+  summaries?: CompanySummary[]
+  transactionData?: TransactionData[]
 }
 
 // Processing stages for better UX feedback
@@ -134,6 +139,7 @@ export function ConversionStatus({
   conversionId,
   onStatusChange,
   onDownload,
+  onViewDetails,
   className,
   showDetails = true,
   autoRefresh = true
@@ -595,18 +601,60 @@ export function ConversionStatus({
               
               {/* Conversion statistics */}
               {conversion.status === 'completed' && (
-                <div className="flex gap-4 text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
-                  {conversion.tablesExtracted !== undefined && (
-                    <span className="flex items-center gap-1">
-                      <Table className="h-4 w-4" />
-                      {conversion.tablesExtracted} tables
-                    </span>
-                  )}
-                  {conversion.totalRows !== undefined && (
-                    <span>{conversion.totalRows} rows</span>
-                  )}
-                  {conversion.processingTimeMs && (
-                    <span>{Math.round(conversion.processingTimeMs / 1000)}s</span>
+                <div className="space-y-3">
+                  <div className="flex gap-4 text-sm text-gray-600 bg-green-50 p-3 rounded-lg">
+                    {conversion.tablesExtracted !== undefined && (
+                      <span className="flex items-center gap-1">
+                        <Table className="h-4 w-4" />
+                        {conversion.tablesExtracted} tables
+                      </span>
+                    )}
+                    {conversion.totalRows !== undefined && (
+                      <span>{conversion.totalRows} rows</span>
+                    )}
+                    {conversion.processingTimeMs && (
+                      <span>{Math.round(conversion.processingTimeMs / 1000)}s</span>
+                    )}
+                  </div>
+                  
+                  {/* Summary Statistics */}
+                  {conversion.summaries && conversion.summaries.length > 0 && (
+                    <div className="bg-blue-50 p-3 rounded-lg space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium text-blue-800">
+                        <Building2 className="h-4 w-4" />
+                        Data Summary
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm text-blue-700">
+                        <span>{conversion.summaries.length} companies</span>
+                        <span>
+                          {new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0,
+                          }).format(
+                            conversion.summaries.reduce((sum: number, company: any) => 
+                              sum + (company.json?.totalPajak || 0), 0)
+                          )} total tax
+                        </span>
+                      </div>
+                      
+                      {/* View Details Button */}
+                      {conversion.transactionData && onViewDetails && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onViewDetails(
+                            conversionId,
+                            conversion.summaries as CompanySummary[],
+                            conversion.transactionData as TransactionData[]
+                          )}
+                          className="w-full mt-2 flex items-center justify-center gap-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
